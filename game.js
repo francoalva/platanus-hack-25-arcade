@@ -413,7 +413,12 @@ function draw(){
       g.fillStyle(0x8B4513,0.3);
       g.fillRect(25,65,160,470);
       
-      drwTxt('PLATRIS',40,85,2,0xFFDD00);
+      txt[9].setText('SINGLE PLAYER');
+      txt[9].setPosition(105,85);
+      txt[9].setStyle({fontSize:'11px',color:'#FFDD00',fontStyle:'bold'});
+      txt[9].setOrigin(0.5);
+      txt[9].setAngle(0);
+      txt[9].setVisible(true);
       
       const bx=140,by=80;
       g.fillStyle(0xFFFF00);
@@ -426,85 +431,85 @@ function draw(){
       g.fillRect(bx+4,by+18,2,5);
       
       g.fillStyle(0xFFDD00,0.5);
-      g.fillRect(35,125,130,3);
+      g.fillRect(35,110,130,3);
       
       const spd=p1.spd;
       const spdPct=Math.round((800-spd)/700*100);
       
       txt[0].setText('SCORE');
-      txt[0].setPosition(105,150);
+      txt[0].setPosition(105,130);
       txt[0].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
       txt[0].setOrigin(0.5);
       
       txt[1].setText(score.toString());
-      txt[1].setPosition(105,172);
+      txt[1].setPosition(105,152);
       txt[1].setStyle({fontSize:'26px',color:'#FFFF00',fontStyle:'bold'});
       txt[1].setOrigin(0.5);
       
       g.fillStyle(0xFFDD00,0.3);
-      g.fillRect(35,200,130,2);
+      g.fillRect(35,180,130,2);
       
       txt[2].setText('LEVEL');
-      txt[2].setPosition(105,220);
+      txt[2].setPosition(105,200);
       txt[2].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
       txt[2].setOrigin(0.5);
       
       txt[3].setText(lvl.toString());
-      txt[3].setPosition(105,242);
+      txt[3].setPosition(105,222);
       txt[3].setStyle({fontSize:'26px',color:'#00FFFF',fontStyle:'bold'});
       txt[3].setOrigin(0.5);
       
       g.fillStyle(0xFFDD00,0.3);
-      g.fillRect(35,270,130,2);
+      g.fillRect(35,250,130,2);
       
       txt[4].setText('LINES');
-      txt[4].setPosition(105,290);
+      txt[4].setPosition(105,270);
       txt[4].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
       txt[4].setOrigin(0.5);
       txt[4].setVisible(true);
       
       txt[5].setText(lns.toString());
-      txt[5].setPosition(105,312);
+      txt[5].setPosition(105,292);
       txt[5].setStyle({fontSize:'26px',color:'#00FF00',fontStyle:'bold'});
       txt[5].setOrigin(0.5);
       txt[5].setVisible(true);
       
       g.fillStyle(0xFFDD00,0.3);
-      g.fillRect(35,340,130,2);
+      g.fillRect(35,320,130,2);
       
       txt[6].setText('SPEED');
-      txt[6].setPosition(105,360);
+      txt[6].setPosition(105,340);
       txt[6].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
       txt[6].setOrigin(0.5);
       txt[6].setVisible(true);
       
       txt[7].setText(spdPct+'%');
-      txt[7].setPosition(105,382);
+      txt[7].setPosition(105,362);
       txt[7].setStyle({fontSize:'26px',color:'#FF00FF',fontStyle:'bold'});
       txt[7].setOrigin(0.5);
       txt[7].setVisible(true);
       
       g.fillStyle(0x222222);
-      g.fillRect(45,415,120,16);
+      g.fillRect(45,395,120,16);
       g.fillStyle(0xFF00FF);
-      g.fillRect(45,415,120*spdPct/100,16);
+      g.fillRect(45,395,120*spdPct/100,16);
       g.lineStyle(2,0xFFDD00);
-      g.strokeRect(45,415,120,16);
-      
-      txt[8].setText(spd+'ms');
-      txt[8].setPosition(105,450);
-      txt[8].setStyle({fontSize:'11px',color:'#777',fontStyle:'italic'});
-      txt[8].setOrigin(0.5);
-      txt[8].setVisible(true);
+      g.strokeRect(45,395,120,16);
       
       g.fillStyle(0xFFDD00,0.3);
-      g.fillRect(35,480,130,2);
+      g.fillRect(35,425,130,2);
       
-      txt[9].setText('SINGLE PLAYER');
-      txt[9].setPosition(105,505);
-      txt[9].setStyle({fontSize:'10px',color:'#FFDD00',fontStyle:'bold'});
-      txt[9].setOrigin(0.5);
-      txt[9].setVisible(true);
+      drwTxt('PLATRIS',40,445,2,0xFFDD00);
+      
+      g.fillStyle(0xFFDD00,0.3);
+      g.fillRect(35,490,130,2);
+      
+      txt[8].setText(spd+'ms');
+      txt[8].setPosition(105,510);
+      txt[8].setStyle({fontSize:'11px',color:'#777',fontStyle:'italic'});
+      txt[8].setOrigin(0.5);
+      txt[8].setAngle(0);
+      txt[8].setVisible(true);
       
       const oldX=p1.x;
       p1.x=360;
@@ -515,9 +520,24 @@ function draw(){
       txt[0].setText('PLATRIS');
       txt[1].setText('');
       txt[2].setText('');
-      txt[4].setVisible(true);txt[5].setVisible(true);
-      txt[6].setVisible(true);txt[7].setVisible(true);
-      txt[8].setVisible(true);txt[9].setVisible(true);
+      txt[3].setText('');
+      txt[4].setText('NEXT');
+      txt[4].setPosition(95,508);
+      txt[4].setStyle({fontSize:'11px',color:'#888',fontStyle:'bold'});
+      txt[4].setVisible(true);
+      txt[5].setText('HOLD');
+      txt[5].setPosition(285,508);
+      txt[5].setStyle({fontSize:'11px',color:'#888',fontStyle:'bold'});
+      txt[5].setVisible(true);
+      txt[6].setText('NEXT');
+      txt[6].setPosition(515,508);
+      txt[6].setStyle({fontSize:'11px',color:'#888',fontStyle:'bold'});
+      txt[6].setVisible(true);
+      txt[7].setText('HOLD');
+      txt[7].setPosition(705,508);
+      txt[7].setStyle({fontSize:'11px',color:'#888',fontStyle:'bold'});
+      txt[7].setVisible(true);
+      txt[8].setVisible(false);txt[9].setVisible(false);
       
       drwRoundIndicators();
       
