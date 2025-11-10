@@ -23,7 +23,7 @@ const PC={
 };
 const TYP=['I','O','T','S','Z','J','L'];
 
-let g,p1,p2,st=0,win=0,txt=[],menu=0,at=0,bestOf=3,p1Wins=0,p2Wins=0;
+let g,p1,p2,st=0,win=0,txt=[],menu=0,at=0,bestOf=3,p1Wins=0,p2Wins=0,spMode=false,score=0,lvl=1,lns=0,aiTm=0,lb=[],nmEntry=['A','A','A'],nmIdx=0,rulesMode=0;
 
 new Phaser.Game({type:Phaser.AUTO,width:800,height:600,backgroundColor:'#000',scene:{create,update}});
 
@@ -59,8 +59,13 @@ function newPc(p){
   p.hu=false;
   p.ts=false;
   if(hit(p,p.px,p.py,p.r)){
-    st=2;
-    win=p.id===1?2:1;
+    if(spMode&&p.id===1){
+      st=2;
+      win=1;
+    }else if(!spMode){
+      st=2;
+      win=p.id===1?2:1;
+    }
   }
 }
 
@@ -174,6 +179,17 @@ function clr(p){
       p.b.unshift(Array(10).fill(0));
     }
     p.lns+=cl.length;
+    if(spMode&&p.id===1){
+      const pts=[0,100,300,500,800];
+      score+=pts[cl.length]*lvl;
+      score+=p.cmb>1?(p.cmb-1)*50*lvl:0;
+      lns+=cl.length;
+      const newLvl=Math.floor(lns/10)+1;
+      if(newLvl>lvl){
+        lvl=newLvl;
+        p.spd=Math.max(100,800-lvl*70);
+      }
+    }
   }
   return cl.length;
 }
@@ -232,9 +248,13 @@ function create(){
     
     if(st===0){
       if(k==='P1U'||k==='P2U'){menu=menu>0?menu-1:0;}
-      else if(k==='P1D'||k==='P2D'){menu=menu<1?menu+1:1;}
+      else if(k==='P1D'||k==='P2D'){menu=menu<2?menu+1:2;}
       else if(k==='START1'||k==='START2'){
-        if(menu===0){st=5;}
+        if(menu===0){
+          spMode=true;score=0;lvl=1;lns=0;
+          p1=mkP(1,60);p2=mkP(2,480);
+          fillNxt(p1);newPc(p1);p1.spd=800;st=1;
+        }else if(menu===1){spMode=false;st=5;}
         else{st=4;}
       }
       return;
@@ -254,21 +274,50 @@ function create(){
     if(st===3&&(k==='START1'||k==='START2')){st=1;return;}
     
     if(st===2&&(k==='START1'||k==='START2')){
-      const winsNeeded=Math.floor(bestOf/2)+1;
-      if(win===1)p1Wins++;
-      else p2Wins++;
-      
-      if(p1Wins>=winsNeeded||p2Wins>=winsNeeded){
-        st=6;
+      if(spMode){
+        if(lb.length<10||score>lb[lb.length-1].s){
+          nmEntry=['A','A','A'];nmIdx=0;st=7;
+        }else{st=8;}
       }else{
-        p1=mkP(1,60);p2=mkP(2,480);
-        fillNxt(p1);fillNxt(p2);newPc(p1);newPc(p2);
-        st=1;win=0;
+        const winsNeeded=Math.floor(bestOf/2)+1;
+        if(win===1)p1Wins++;
+        else p2Wins++;
+        
+        if(p1Wins>=winsNeeded||p2Wins>=winsNeeded){
+          st=6;
+        }else{
+          p1=mkP(1,60);p2=mkP(2,480);
+          fillNxt(p1);fillNxt(p2);newPc(p1);newPc(p2);
+          st=1;win=0;
+        }
       }
       return;
     }
     
-    if(st===4&&(k==='START1'||k==='START2'||k==='P1A'||k==='P2A')){st=0;return;}
+    if(st===4){
+      if(k==='START1'||k==='START2'||k==='P1A'||k==='P2A'){st=0;return;}
+      if(k==='P1L'||k==='P2L'){rulesMode=0;}
+      if(k==='P1R'||k==='P2R'){rulesMode=1;}
+      return;
+    }
+    
+    if(st===7){
+      if(k==='P1U'||k==='P2U'){nmEntry[nmIdx]=String.fromCharCode(((nmEntry[nmIdx].charCodeAt(0)-65+1)%26)+65);}
+      else if(k==='P1D'||k==='P2D'){nmEntry[nmIdx]=String.fromCharCode(((nmEntry[nmIdx].charCodeAt(0)-65+25)%26)+65);}
+      else if(k==='P1R'||k==='P2R'){nmIdx=nmIdx<2?nmIdx+1:2;}
+      else if(k==='P1L'||k==='P2L'){nmIdx=nmIdx>0?nmIdx-1:0;}
+      else if(k==='START1'||k==='START2'){
+        lb.push({n:nmEntry.join(''),s:score});
+        lb.sort((a,b)=>b.s-a.s);
+        if(lb.length>10)lb=lb.slice(0,10);
+        st=8;
+      }
+      return;
+    }
+    
+    if(st===8&&(k==='START1'||k==='START2')){
+      p1=mkP(1,60);p2=mkP(2,480);st=0;menu=0;spMode=false;return;
+    }
     
     if(st===6&&(k==='START1'||k==='START2')){
       p1=mkP(1,60);p2=mkP(2,480);
@@ -309,9 +358,11 @@ function update(_,d){
       p1.tm=0;
       if(!mv(p1,0,1))lock(p1,p2);
     }
-    if(p2.tm>=s2){
-      p2.tm=0;
-      if(!mv(p2,0,1))lock(p2,p1);
+    if(!spMode){
+      if(p2.tm>=s2){
+        p2.tm=0;
+        if(!mv(p2,0,1))lock(p2,p1);
+      }
     }
   }
   draw();
@@ -328,6 +379,10 @@ function draw(){
     drwRoundSelect();
   }else if(st===6){
     drwSeriesWinner();
+  }else if(st===7){
+    drwNameEntry();
+  }else if(st===8){
+    drwLeaderboard();
   }else{
     const t=at*0.0005;
     for(let i=0;i<4;i++){
@@ -344,21 +399,140 @@ function draw(){
       g.fillCircle(sx,sy,1);
     }
     
-    txt[0].setText('PLATRIS');
-    txt[1].setText('');
-    txt[2].setText('');
-    txt[4].setVisible(true);txt[5].setVisible(true);
-    txt[6].setVisible(true);txt[7].setVisible(true);
-    txt[8].setVisible(true);txt[9].setVisible(true);
-    
-    drwRoundIndicators();
-    
-    drwP(p1);
-    drwP(p2);
-    drwUI(p1,60);
-    drwUI(p2,480);
+    if(spMode){
+      txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
+      txt[4].setVisible(false);txt[5].setVisible(false);
+      txt[6].setVisible(false);txt[7].setVisible(false);
+      txt[8].setVisible(false);txt[9].setVisible(false);
+      
+      g.fillStyle(0x000000,0.85);
+      g.fillRect(20,60,170,480);
+      g.lineStyle(4,0xFFDD00);
+      g.strokeRect(22,62,166,476);
+      
+      g.fillStyle(0x8B4513,0.3);
+      g.fillRect(25,65,160,470);
+      
+      drwTxt('PLATRIS',40,85,2,0xFFDD00);
+      
+      const bx=140,by=80;
+      g.fillStyle(0xFFFF00);
+      g.fillRect(bx+3,by,3,20);
+      g.fillRect(bx+6,by-3,3,3);
+      g.fillRect(bx,by+6,9,13);
+      g.fillStyle(0xFFDD00);
+      g.fillRect(bx+2,by+8,5,9);
+      g.fillStyle(0x8B4513);
+      g.fillRect(bx+4,by+18,2,5);
+      
+      g.fillStyle(0xFFDD00,0.5);
+      g.fillRect(35,125,130,3);
+      
+      const spd=p1.spd;
+      const spdPct=Math.round((800-spd)/700*100);
+      
+      txt[0].setText('SCORE');
+      txt[0].setPosition(105,150);
+      txt[0].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
+      txt[0].setOrigin(0.5);
+      
+      txt[1].setText(score.toString());
+      txt[1].setPosition(105,172);
+      txt[1].setStyle({fontSize:'26px',color:'#FFFF00',fontStyle:'bold'});
+      txt[1].setOrigin(0.5);
+      
+      g.fillStyle(0xFFDD00,0.3);
+      g.fillRect(35,200,130,2);
+      
+      txt[2].setText('LEVEL');
+      txt[2].setPosition(105,220);
+      txt[2].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
+      txt[2].setOrigin(0.5);
+      
+      txt[3].setText(lvl.toString());
+      txt[3].setPosition(105,242);
+      txt[3].setStyle({fontSize:'26px',color:'#00FFFF',fontStyle:'bold'});
+      txt[3].setOrigin(0.5);
+      
+      g.fillStyle(0xFFDD00,0.3);
+      g.fillRect(35,270,130,2);
+      
+      txt[4].setText('LINES');
+      txt[4].setPosition(105,290);
+      txt[4].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
+      txt[4].setOrigin(0.5);
+      txt[4].setVisible(true);
+      
+      txt[5].setText(lns.toString());
+      txt[5].setPosition(105,312);
+      txt[5].setStyle({fontSize:'26px',color:'#00FF00',fontStyle:'bold'});
+      txt[5].setOrigin(0.5);
+      txt[5].setVisible(true);
+      
+      g.fillStyle(0xFFDD00,0.3);
+      g.fillRect(35,340,130,2);
+      
+      txt[6].setText('SPEED');
+      txt[6].setPosition(105,360);
+      txt[6].setStyle({fontSize:'13px',color:'#999',fontStyle:'bold'});
+      txt[6].setOrigin(0.5);
+      txt[6].setVisible(true);
+      
+      txt[7].setText(spdPct+'%');
+      txt[7].setPosition(105,382);
+      txt[7].setStyle({fontSize:'26px',color:'#FF00FF',fontStyle:'bold'});
+      txt[7].setOrigin(0.5);
+      txt[7].setVisible(true);
+      
+      g.fillStyle(0x222222);
+      g.fillRect(45,415,120,16);
+      g.fillStyle(0xFF00FF);
+      g.fillRect(45,415,120*spdPct/100,16);
+      g.lineStyle(2,0xFFDD00);
+      g.strokeRect(45,415,120,16);
+      
+      txt[8].setText(spd+'ms');
+      txt[8].setPosition(105,450);
+      txt[8].setStyle({fontSize:'11px',color:'#777',fontStyle:'italic'});
+      txt[8].setOrigin(0.5);
+      txt[8].setVisible(true);
+      
+      g.fillStyle(0xFFDD00,0.3);
+      g.fillRect(35,480,130,2);
+      
+      txt[9].setText('SINGLE PLAYER');
+      txt[9].setPosition(105,505);
+      txt[9].setStyle({fontSize:'10px',color:'#FFDD00',fontStyle:'bold'});
+      txt[9].setOrigin(0.5);
+      txt[9].setVisible(true);
+      
+      const oldX=p1.x;
+      p1.x=360;
+      drwP(p1);
+      drwUI(p1,360);
+      p1.x=oldX;
+    }else{
+      txt[0].setText('PLATRIS');
+      txt[1].setText('');
+      txt[2].setText('');
+      txt[4].setVisible(true);txt[5].setVisible(true);
+      txt[6].setVisible(true);txt[7].setVisible(true);
+      txt[8].setVisible(true);txt[9].setVisible(true);
+      
+      drwRoundIndicators();
+      
+      drwP(p1);
+      drwP(p2);
+      drwUI(p1,60);
+      drwUI(p2,480);
+    }
     
     if(st===2){
+      txt[0].setText('');txt[1].setText('');txt[2].setText('');
+      txt[4].setVisible(false);txt[5].setVisible(false);
+      txt[6].setVisible(false);txt[7].setVisible(false);
+      txt[8].setVisible(false);txt[9].setVisible(false);
+      
       g.fillStyle(0x000000,0.8);
       g.fillRect(200,180,400,240);
       g.fillStyle(0xFFFFFF);
@@ -366,14 +540,25 @@ function draw(){
       g.fillStyle(0x000000);
       g.fillRect(204,184,392,232);
       
-      const nextP1=p1Wins+(win===1?1:0);
-      const nextP2=p2Wins+(win===2?1:0);
-      const winsNeeded=Math.floor(bestOf/2)+1;
-      
-      txt[3].setText((win===1?'PLAYER 1':'PLAYER 2')+' WINS ROUND!\n\nSeries: '+nextP1+' - '+nextP2+'\n\nFirst to '+winsNeeded+' wins!\n\nPress START');
-      txt[3].setPosition(400,300);
-      txt[3].setStyle({fontSize:'20px',color:'#ff0',align:'center'});
+      if(spMode){
+        txt[3].setText('GAME OVER!\n\nFINAL SCORE: '+score+'\nLEVEL: '+lvl+'\nLINES: '+lns+'\n\nPress START');
+        txt[3].setPosition(400,300);
+        txt[3].setStyle({fontSize:'20px',color:'#ff0',align:'center'});
+      }else{
+        const nextP1=p1Wins+(win===1?1:0);
+        const nextP2=p2Wins+(win===2?1:0);
+        const winsNeeded=Math.floor(bestOf/2)+1;
+        
+        txt[3].setText((win===1?'PLAYER 1':'PLAYER 2')+' WINS ROUND!\n\nSeries: '+nextP1+' - '+nextP2+'\n\nFirst to '+winsNeeded+' wins!\n\nPress START');
+        txt[3].setPosition(400,300);
+        txt[3].setStyle({fontSize:'20px',color:'#ff0',align:'center'});
+      }
     }else if(st===3){
+      txt[0].setText('');txt[1].setText('');txt[2].setText('');
+      txt[4].setVisible(false);txt[5].setVisible(false);
+      txt[6].setVisible(false);txt[7].setVisible(false);
+      txt[8].setVisible(false);txt[9].setVisible(false);
+      
       g.fillStyle(0x000000,0.7);
       g.fillRect(0,0,800,600);
       txt[3].setText('PAUSED\nPress START to Resume');
@@ -457,20 +642,24 @@ function drwRoundSelect(){
   txt[0].setText('SELECT ROUNDS');
   txt[0].setPosition(400,100);
   txt[0].setStyle({fontSize:'32px',color:'#000',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
   
   txt[1].setText('BEST OF '+bestOf);
   txt[1].setPosition(400,250);
   txt[1].setStyle({fontSize:'48px',color:'#8B4513',fontStyle:'bold'});
+  txt[1].setOrigin(0.5);
   
   txt[2].setText('First to win '+(Math.floor(bestOf/2)+1)+' rounds!');
   txt[2].setPosition(400,330);
   txt[2].setStyle({fontSize:'20px',color:'#000',fontStyle:'bold'});
+  txt[2].setOrigin(0.5);
   
   g.fillStyle(0x000000,0.6);
-  g.fillRect(220,440,360,25);
+  g.fillRect(150,430,500,50);
   txt[3].setText('← →  CHANGE  •  START  BEGIN  •  BUTTON A  BACK');
-  txt[3].setPosition(400,452);
+  txt[3].setPosition(400,455);
   txt[3].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
+  txt[3].setOrigin(0.5);
 }
 
 function drwSeriesWinner(){
@@ -508,18 +697,24 @@ function drwSeriesWinner(){
   txt[0].setText('SERIES WINNER');
   txt[0].setPosition(400,150);
   txt[0].setStyle({fontSize:'32px',color:'#fff',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
   
   txt[1].setText(winner);
   txt[1].setPosition(400,250);
   txt[1].setStyle({fontSize:'64px',color:'#'+wc.toString(16).padStart(6,'0'),fontStyle:'bold'});
+  txt[1].setOrigin(0.5);
   
   txt[2].setText(p1Wins+' - '+p2Wins);
   txt[2].setPosition(400,350);
   txt[2].setStyle({fontSize:'36px',color:'#000',fontStyle:'bold'});
+  txt[2].setOrigin(0.5);
   
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(200,465,400,40);
   txt[3].setText('Press START to return to menu');
-  txt[3].setPosition(400,480);
-  txt[3].setStyle({fontSize:'18px',color:'#000',fontStyle:'bold'});
+  txt[3].setPosition(400,485);
+  txt[3].setStyle({fontSize:'18px',color:'#FFFF00',fontStyle:'bold'});
+  txt[3].setOrigin(0.5);
 }
 
 function drwMenu(){
@@ -583,46 +778,57 @@ function drwMenu(){
   
   const c1=menu===0?0xFFDD00:0x8B4513;
   const c2=menu===1?0xFFDD00:0x8B4513;
-  const p1=menu===0?1.1:1;
-  const p2=menu===1?1.1:1;
+  const c3=menu===2?0xFFDD00:0x8B4513;
+  const p1=menu===0?1.05:1;
+  const p2=menu===1?1.05:1;
+  const p3=menu===2?1.05:1;
   
   g.fillStyle(c1);
-  g.fillRect(250,320,300*p1,50);
+  g.fillRect(250,280,300*p1,45);
   g.fillStyle(0x000000,0.7);
-  g.fillRect(255,325,290*p1,40);
+  g.fillRect(255,284,290*p1,37);
   g.fillStyle(c1,0.3);
-  g.fillRect(258,328,284*p1,34);
+  g.fillRect(258,287,284*p1,31);
   
   g.fillStyle(c2);
-  g.fillRect(250,400,300*p2,50);
+  g.fillRect(250,340,300*p2,45);
   g.fillStyle(0x000000,0.7);
-  g.fillRect(255,405,290*p2,40);
+  g.fillRect(255,344,290*p2,37);
   g.fillStyle(c2,0.3);
-  g.fillRect(258,408,284*p2,34);
+  g.fillRect(258,347,284*p2,31);
   
-  txt[0].setText('START GAME');
-  txt[0].setPosition(400,345);
-  txt[0].setStyle({fontSize:'22px',color:menu===0?'#FFFF00':'#999',fontStyle:'bold'});
+  g.fillStyle(c3);
+  g.fillRect(250,400,300*p3,45);
+  g.fillStyle(0x000000,0.7);
+  g.fillRect(255,404,290*p3,37);
+  g.fillStyle(c3,0.3);
+  g.fillRect(258,407,284*p3,31);
   
-  txt[1].setText('HOW TO PLAY');
-  txt[1].setPosition(400,425);
-  txt[1].setStyle({fontSize:'22px',color:menu===1?'#FFFF00':'#999',fontStyle:'bold'});
+  txt[0].setText('SINGLE PLAYER');
+  txt[0].setPosition(400,302);
+  txt[0].setStyle({fontSize:'20px',color:menu===0?'#FFFF00':'#999',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
+  
+  txt[1].setText('MULTIPLAYER');
+  txt[1].setPosition(400,362);
+  txt[1].setStyle({fontSize:'20px',color:menu===1?'#FFFF00':'#999',fontStyle:'bold'});
+  txt[1].setOrigin(0.5);
+  
+  txt[2].setText('HOW TO PLAY');
+  txt[2].setPosition(400,422);
+  txt[2].setStyle({fontSize:'20px',color:menu===2?'#FFFF00':'#999',fontStyle:'bold'});
+  txt[2].setOrigin(0.5);
   
   g.fillStyle(0x000000,0.6);
-  g.fillRect(250,490,300,25);
-  txt[2].setText('A Platanus Hackathon Game');
-  txt[2].setPosition(400,502);
-  txt[2].setStyle({fontSize:'12px',color:'#FFFF00',fontStyle:'italic'});
-  
-  g.fillStyle(0x000000,0.6);
-  g.fillRect(220,540,360,25);
+  g.fillRect(220,530,360,35);
   txt[3].setText('▲ ▼  SELECT  •  START  CONFIRM');
-  txt[3].setPosition(400,552);
+  txt[3].setPosition(400,547);
   txt[3].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
+  txt[3].setOrigin(0.5);
 }
 
 function drwRules(){
-  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
+  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');txt[4].setText('');
   txt[4].setVisible(false);txt[5].setVisible(false);
   txt[6].setVisible(false);txt[7].setVisible(false);
   txt[8].setVisible(false);txt[9].setVisible(false);
@@ -634,16 +840,117 @@ function drwRules(){
   g.fillStyle(0x000000);
   g.fillRect(25,25,750,550);
   
-  txt[0].setText('HOW TO PLAY - PLATRIS');
-  txt[0].setPosition(400,50);
-  txt[0].setStyle({fontSize:'20px',color:'#0ff',fontStyle:'bold'});
+  txt[0].setText('HOW TO PLAY - '+(rulesMode===0?'MULTIPLAYER':'SINGLE PLAYER'));
+  txt[0].setPosition(400,45);
+  txt[0].setStyle({fontSize:'18px',color:'#0ff',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
   
-  const rls='GOAL: Fill opponent board to the top!\n\nPLAYER 1 CONTROLS:\n  A/D = Move Left/Right  |  W = Rotate\n  S = Soft Drop  |  J = Hard Drop  |  K = Hold\n\nPLAYER 2 CONTROLS:\n  ← → = Move Left/Right  |  ↑ = Rotate\n  ↓ = Soft Drop  |  R = Hard Drop  |  T = Hold\n\nSTART = Pause Game\n\nATTACK SYSTEM:\n  2 Lines = 1 Garbage  |  3 Lines = 2 Garbage\n  4 Lines (Tetris) = 4 Garbage\n  T-Spin Double = 4  |  T-Spin Triple = 6\n  Combo +1 = +1 Garbage per consecutive clear\n\nDEFENSE: Clear lines to cancel incoming garbage!\n\nPress START to return';
+  const mp='GOAL: Fill opponent board to the top!\n\nCONTROLS:\n  A/D = Move  |  W = Rotate  |  S = Soft Drop\n  J = Hard Drop  |  K = Hold  |  START = Pause\n\nATTACK SYSTEM:\n  2 Lines = 1 Garbage  |  3 Lines = 2 Garbage\n  4 Lines (Tetris) = 4 Garbage\n  T-Spin Double = 4  |  T-Spin Triple = 6\n  Combo +1 = +1 Garbage per consecutive clear\n\nDEFENSE: Clear lines to cancel incoming!\n\n← → Switch Mode  |  START Return';
+  const sp='GOAL: Survive and score as high as possible!\n\nCONTROLS:\n  A/D = Move  |  W = Rotate  |  S = Soft Drop\n  J = Hard Drop  |  K = Hold  |  START = Pause\n\nSCORING:\n  1 Line = 100 pts  |  2 Lines = 300 pts\n  3 Lines = 500 pts  |  4 Lines (Tetris) = 800 pts\n  Points multiplied by current level!\n  Combo Bonus: +50 pts per combo * level\n\nSPEED: Every 10 lines = Level Up!\n  Higher levels = Faster speed + More points\n\n← → Switch Mode  |  START Return';
   
-  txt[1].setText(rls);
-  txt[1].setPosition(50,85);
-  txt[1].setStyle({fontSize:'14px',color:'#fff',align:'left',lineSpacing:3});
+  txt[1].setText(rulesMode===0?mp:sp);
+  txt[1].setPosition(50,75);
+  txt[1].setStyle({fontSize:'13px',color:'#fff',align:'left',lineSpacing:4});
   txt[1].setOrigin(0,0);
+}
+
+function drwNameEntry(){
+  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');txt[4].setText('');
+  txt[5].setVisible(false);txt[6].setVisible(false);
+  txt[7].setVisible(false);txt[8].setVisible(false);txt[9].setVisible(false);
+  
+  const t=at*0.001;
+  const bananaColors=[0xFFFF33,0xFFDD00,0xFFCC00,0xDD9900,0xAA7700,0x8B4513];
+  for(let i=0;i<6;i++){
+    const idx=Math.floor((i+t*2)%bananaColors.length);
+    g.fillStyle(bananaColors[idx]);
+    g.fillRect(0,i*100,800,100);
+  }
+  
+  txt[0].setText('NEW HIGH SCORE!');
+  txt[0].setPosition(400,100);
+  txt[0].setStyle({fontSize:'32px',color:'#000',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
+  
+  txt[1].setText('SCORE: '+score);
+  txt[1].setPosition(400,160);
+  txt[1].setStyle({fontSize:'28px',color:'#8B4513',fontStyle:'bold'});
+  txt[1].setOrigin(0.5);
+  
+  txt[2].setText('ENTER YOUR NAME');
+  txt[2].setPosition(400,230);
+  txt[2].setStyle({fontSize:'20px',color:'#000',fontStyle:'bold'});
+  txt[2].setOrigin(0.5);
+  
+  for(let i=0;i<3;i++){
+    const blink=nmIdx===i&&Math.floor(t*2)%2===0;
+    g.fillStyle(blink?0xFFDD00:0x000000,0.7);
+    g.fillRect(280+i*80,280,60,80);
+    g.lineStyle(4,nmIdx===i?0xFFFF00:0x8B4513);
+    g.strokeRect(282+i*80,282,56,76);
+  }
+  
+  txt[3].setText(nmEntry[0]+'    '+nmEntry[1]+'    '+nmEntry[2]);
+  txt[3].setPosition(400,320);
+  txt[3].setStyle({fontSize:'48px',color:'#FFFF00',fontStyle:'bold',fontFamily:'monospace'});
+  txt[3].setOrigin(0.5);
+  
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(150,415,500,70);
+  txt[4].setText('▲ ▼  CHANGE  •  ← →  MOVE  •  START  CONFIRM');
+  txt[4].setPosition(400,450);
+  txt[4].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
+  txt[4].setOrigin(0.5);
+  txt[4].setVisible(true);
+}
+
+function drwLeaderboard(){
+  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
+  txt[4].setVisible(false);txt[5].setVisible(false);
+  txt[6].setVisible(false);txt[7].setVisible(false);
+  txt[8].setVisible(false);txt[9].setVisible(false);
+  
+  const t=at*0.001;
+  const bananaColors=[0xFFFF33,0xFFDD00,0xFFCC00,0xDD9900,0xAA7700,0x8B4513];
+  for(let i=0;i<6;i++){
+    const idx=Math.floor((i+t)%bananaColors.length);
+    g.fillStyle(bananaColors[idx],0.8);
+    g.fillRect(0,i*100,800,100);
+  }
+  
+  txt[0].setText('LEADERBOARD');
+  txt[0].setPosition(400,50);
+  txt[0].setStyle({fontSize:'36px',color:'#000',fontStyle:'bold'});
+  txt[0].setOrigin(0.5);
+  
+  g.fillStyle(0x000000,0.7);
+  g.fillRect(150,100,500,420);
+  g.lineStyle(4,0xFFDD00);
+  g.strokeRect(152,102,496,416);
+  
+  let lbTxt='RANK  NAME   SCORE\n\n';
+  for(let i=0;i<10;i++){
+    const rank=(i+1).toString().padStart(2,' ');
+    if(i<lb.length){
+      const isNew=lb[i].s===score;
+      const marker=isNew?' ►':'  ';
+      lbTxt+=marker+rank+'.  '+lb[i].n+'    '+lb[i].s+'\n';
+    }else{
+      lbTxt+='  '+rank+'.  ---    0\n';
+    }
+  }
+  
+  txt[1].setText(lbTxt);
+  txt[1].setPosition(200,120);
+  txt[1].setStyle({fontSize:'16px',color:'#FFFF00',fontStyle:'bold',fontFamily:'monospace',align:'left',lineSpacing:5});
+  txt[1].setOrigin(0,0);
+  
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(200,530,400,40);
+  txt[3].setText('Press START to return to menu');
+  txt[3].setPosition(400,550);
+  txt[3].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
+  txt[3].setOrigin(0.5);
 }
 
 function drwTxt(t,x,y,s,c){
