@@ -23,7 +23,7 @@ const PC={
 };
 const TYP=['I','O','T','S','Z','J','L'];
 
-let g,p1,p2,st=0,win=0,txt=[],menu=0,at=0;
+let g,p1,p2,st=0,win=0,txt=[],menu=0,at=0,bestOf=3,p1Wins=0,p2Wins=0;
 
 new Phaser.Game({type:Phaser.AUTO,width:800,height:600,backgroundColor:'#000',scene:{create,update}});
 
@@ -220,12 +220,12 @@ function create(){
   txt.push(this.add.text(155,30,'',{fontSize:'16px',color:'#0f0'}).setOrigin(0.5));
   txt.push(this.add.text(575,30,'',{fontSize:'16px',color:'#f00'}).setOrigin(0.5));
   txt.push(this.add.text(400,575,'',{fontSize:'14px',color:'#ff0'}).setOrigin(0.5));
-  txt.push(this.add.text(120,510,'NEXT',{fontSize:'12px',color:'#888'}));
-  txt.push(this.add.text(280,510,'HOLD',{fontSize:'12px',color:'#888'}));
-  txt.push(this.add.text(540,510,'NEXT',{fontSize:'12px',color:'#888'}));
-  txt.push(this.add.text(700,510,'HOLD',{fontSize:'12px',color:'#888'}));
-  txt.push(this.add.text(340,520,'INCOMING',{fontSize:'10px',color:'#f00'}).setOrigin(0.5).setAngle(90));
-  txt.push(this.add.text(760,520,'INCOMING',{fontSize:'10px',color:'#f00'}).setOrigin(0.5).setAngle(90));
+  txt.push(this.add.text(95,508,'NEXT',{fontSize:'11px',color:'#888',fontStyle:'bold'}).setOrigin(0.5));
+  txt.push(this.add.text(285,508,'HOLD',{fontSize:'11px',color:'#888',fontStyle:'bold'}).setOrigin(0.5));
+  txt.push(this.add.text(515,508,'NEXT',{fontSize:'11px',color:'#888',fontStyle:'bold'}).setOrigin(0.5));
+  txt.push(this.add.text(705,508,'HOLD',{fontSize:'11px',color:'#888',fontStyle:'bold'}).setOrigin(0.5));
+  txt.push(this.add.text(305,520,'INCOMING',{fontSize:'10px',color:'#f00',fontStyle:'bold'}).setOrigin(0.5).setAngle(90));
+  txt.push(this.add.text(725,520,'INCOMING',{fontSize:'10px',color:'#f00',fontStyle:'bold'}).setOrigin(0.5).setAngle(90));
   
   this.input.keyboard.on('keydown',e=>{
     const k=K2A[e.key]||e.key;
@@ -234,10 +234,19 @@ function create(){
       if(k==='P1U'||k==='P2U'){menu=menu>0?menu-1:0;}
       else if(k==='P1D'||k==='P2D'){menu=menu<1?menu+1:1;}
       else if(k==='START1'||k==='START2'){
-        if(menu===0){
-          fillNxt(p1);fillNxt(p2);newPc(p1);newPc(p2);st=1;
-        }else{st=4;}
+        if(menu===0){st=5;}
+        else{st=4;}
       }
+      return;
+    }
+    
+    if(st===5){
+      if(k==='P1L'||k==='P2L'){bestOf=bestOf>3?bestOf-2:3;}
+      else if(k==='P1R'||k==='P2R'){bestOf=bestOf<7?bestOf+2:7;}
+      else if(k==='START1'||k==='START2'){
+        p1Wins=0;p2Wins=0;
+        fillNxt(p1);fillNxt(p2);newPc(p1);newPc(p2);st=1;
+      }else if(k==='P1A'||k==='P2A'){st=0;}
       return;
     }
     
@@ -245,10 +254,27 @@ function create(){
     if(st===3&&(k==='START1'||k==='START2')){st=1;return;}
     
     if(st===2&&(k==='START1'||k==='START2')){
-      p1=mkP(1,60);p2=mkP(2,480);st=0;win=0;menu=0;return;
+      const winsNeeded=Math.floor(bestOf/2)+1;
+      if(win===1)p1Wins++;
+      else p2Wins++;
+      
+      if(p1Wins>=winsNeeded||p2Wins>=winsNeeded){
+        st=6;
+      }else{
+        p1=mkP(1,60);p2=mkP(2,480);
+        fillNxt(p1);fillNxt(p2);newPc(p1);newPc(p2);
+        st=1;win=0;
+      }
+      return;
     }
     
     if(st===4&&(k==='START1'||k==='START2'||k==='P1A'||k==='P2A')){st=0;return;}
+    
+    if(st===6&&(k==='START1'||k==='START2')){
+      p1=mkP(1,60);p2=mkP(2,480);
+      p1Wins=0;p2Wins=0;bestOf=3;st=0;win=0;menu=0;
+      return;
+    }
     
     if(st!==1)return;
     if(k==='P1L')mv(p1,-1,0);
@@ -298,6 +324,10 @@ function draw(){
     drwMenu();
   }else if(st===4){
     drwRules();
+  }else if(st===5){
+    drwRoundSelect();
+  }else if(st===6){
+    drwSeriesWinner();
   }else{
     const t=at*0.0005;
     for(let i=0;i<4;i++){
@@ -315,11 +345,13 @@ function draw(){
     }
     
     txt[0].setText('PLATRIS');
-    txt[1].setText('PLAYER 1');
-    txt[2].setText('PLAYER 2');
+    txt[1].setText('');
+    txt[2].setText('');
     txt[4].setVisible(true);txt[5].setVisible(true);
     txt[6].setVisible(true);txt[7].setVisible(true);
     txt[8].setVisible(true);txt[9].setVisible(true);
+    
+    drwRoundIndicators();
     
     drwP(p1);
     drwP(p2);
@@ -328,15 +360,19 @@ function draw(){
     
     if(st===2){
       g.fillStyle(0x000000,0.8);
-      g.fillRect(250,200,300,200);
+      g.fillRect(200,180,400,240);
       g.fillStyle(0xFFFFFF);
-      g.fillRect(252,202,296,196);
+      g.fillRect(202,182,396,236);
       g.fillStyle(0x000000);
-      g.fillRect(254,204,292,192);
-      const w=(win===1?'PLAYER 1':'PLAYER 2')+' WINS!';
-      txt[3].setText(w);
-      txt[3].setPosition(400,280);
-      txt[3].setStyle({fontSize:'24px',color:'#ff0'});
+      g.fillRect(204,184,392,232);
+      
+      const nextP1=p1Wins+(win===1?1:0);
+      const nextP2=p2Wins+(win===2?1:0);
+      const winsNeeded=Math.floor(bestOf/2)+1;
+      
+      txt[3].setText((win===1?'PLAYER 1':'PLAYER 2')+' WINS ROUND!\n\nSeries: '+nextP1+' - '+nextP2+'\n\nFirst to '+winsNeeded+' wins!\n\nPress START');
+      txt[3].setPosition(400,300);
+      txt[3].setStyle({fontSize:'20px',color:'#ff0',align:'center'});
     }else if(st===3){
       g.fillStyle(0x000000,0.7);
       g.fillRect(0,0,800,600);
@@ -349,6 +385,143 @@ function draw(){
   }
 }
 
+function drwRoundIndicators(){
+  const winsNeeded=Math.floor(bestOf/2)+1;
+  
+  for(let i=0;i<winsNeeded;i++){
+    const filled=i<p1Wins;
+    const x=80+i*22;
+    const y=30;
+    
+    if(filled){
+      g.fillStyle(0xFFFF00);
+      g.fillRect(x+3,y,3,18);
+      g.fillRect(x+6,y-3,3,3);
+      g.fillRect(x,y+5,9,12);
+      g.fillStyle(0xFFDD00);
+      g.fillRect(x+2,y+7,5,8);
+      g.fillStyle(0x8B4513);
+      g.fillRect(x+4,y+16,2,4);
+    }else{
+      g.lineStyle(2,0x666666);
+      g.strokeRect(x,y,9,20);
+    }
+  }
+  
+  for(let i=0;i<winsNeeded;i++){
+    const filled=i<p2Wins;
+    const x=720-i*22;
+    const y=30;
+    
+    if(filled){
+      g.fillStyle(0xFFFF00);
+      g.fillRect(x+3,y,3,18);
+      g.fillRect(x+6,y-3,3,3);
+      g.fillRect(x,y+5,9,12);
+      g.fillStyle(0xFFDD00);
+      g.fillRect(x+2,y+7,5,8);
+      g.fillStyle(0x8B4513);
+      g.fillRect(x+4,y+16,2,4);
+    }else{
+      g.lineStyle(2,0x666666);
+      g.strokeRect(x,y,9,20);
+    }
+  }
+}
+
+function drwRoundSelect(){
+  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
+  txt[4].setVisible(false);txt[5].setVisible(false);
+  txt[6].setVisible(false);txt[7].setVisible(false);
+  txt[8].setVisible(false);txt[9].setVisible(false);
+  
+  const t=at*0.001;
+  const bananaColors=[0xFFFF33,0xFFDD00,0xFFCC00,0xDD9900,0xAA7700,0x8B4513];
+  for(let i=0;i<6;i++){
+    const idx=Math.floor((i+t)%bananaColors.length);
+    g.fillStyle(bananaColors[idx],0.7);
+    g.fillRect(0,i*100,800,100);
+  }
+  
+  for(let i=0;i<20;i++){
+    const sx=((i*156)%800);
+    const sy=((i*389+t*50)%600);
+    const bx=sx,by=sy;
+    
+    g.fillStyle(0xFFFF00,0.3);
+    g.fillRect(bx+2,by,2,12);
+    g.fillRect(bx+4,by-2,2,2);
+    g.fillRect(bx,by+3,6,8);
+  }
+  
+  txt[0].setText('SELECT ROUNDS');
+  txt[0].setPosition(400,100);
+  txt[0].setStyle({fontSize:'32px',color:'#000',fontStyle:'bold'});
+  
+  txt[1].setText('BEST OF '+bestOf);
+  txt[1].setPosition(400,250);
+  txt[1].setStyle({fontSize:'48px',color:'#8B4513',fontStyle:'bold'});
+  
+  txt[2].setText('First to win '+(Math.floor(bestOf/2)+1)+' rounds!');
+  txt[2].setPosition(400,330);
+  txt[2].setStyle({fontSize:'20px',color:'#000',fontStyle:'bold'});
+  
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(220,440,360,25);
+  txt[3].setText('← →  CHANGE  •  START  BEGIN  •  BUTTON A  BACK');
+  txt[3].setPosition(400,452);
+  txt[3].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
+}
+
+function drwSeriesWinner(){
+  txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
+  txt[4].setVisible(false);txt[5].setVisible(false);
+  txt[6].setVisible(false);txt[7].setVisible(false);
+  txt[8].setVisible(false);txt[9].setVisible(false);
+  
+  const t=at*0.001;
+  const bananaColors=[0xFFFF33,0xFFDD00,0xFFCC00,0xDD9900,0xAA7700,0x8B4513];
+  for(let i=0;i<6;i++){
+    const idx=Math.floor((i+t*2)%bananaColors.length);
+    g.fillStyle(bananaColors[idx]);
+    g.fillRect(0,i*100,800,100);
+  }
+  
+  for(let i=0;i<50;i++){
+    const sx=((i*234)%800);
+    const sy=((i*567+t*100)%600);
+    const bx=sx,by=sy;
+    
+    g.fillStyle(0xFFFF00,0.6);
+    g.fillRect(bx+3,by,3,15);
+    g.fillRect(bx+6,by-2,3,3);
+    g.fillRect(bx,by+4,9,10);
+    g.fillStyle(0xFFDD00,0.5);
+    g.fillRect(bx+2,by+6,5,6);
+    g.fillStyle(0x8B4513,0.6);
+    g.fillRect(bx+4,by+13,2,3);
+  }
+  
+  const winner=p1Wins>p2Wins?'PLAYER 1':'PLAYER 2';
+  const wc=p1Wins>p2Wins?0x00FF88:0xFF0088;
+  
+  txt[0].setText('SERIES WINNER');
+  txt[0].setPosition(400,150);
+  txt[0].setStyle({fontSize:'32px',color:'#fff',fontStyle:'bold'});
+  
+  txt[1].setText(winner);
+  txt[1].setPosition(400,250);
+  txt[1].setStyle({fontSize:'64px',color:'#'+wc.toString(16).padStart(6,'0'),fontStyle:'bold'});
+  
+  txt[2].setText(p1Wins+' - '+p2Wins);
+  txt[2].setPosition(400,350);
+  txt[2].setStyle({fontSize:'36px',color:'#000',fontStyle:'bold'});
+  
+  txt[3].setText('Press START to return to menu');
+  txt[3].setPosition(400,480);
+  txt[3].setStyle({fontSize:'18px',color:'#000',fontStyle:'bold'});
+}
+
 function drwMenu(){
   txt[0].setText('');txt[1].setText('');txt[2].setText('');txt[3].setText('');
   txt[4].setVisible(false);txt[5].setVisible(false);
@@ -356,20 +529,30 @@ function drwMenu(){
   txt[8].setVisible(false);txt[9].setVisible(false);
   
   const t=at*0.001;
+  const bananaColors=[0xFFFF33,0xFFDD00,0xFFCC00,0xDD9900,0xAA7700,0x8B4513];
   for(let i=0;i<6;i++){
-    const h=(i/6+t*0.1)%1;
-    const c=Phaser.Display.Color.HSVToRGB(h,0.7,0.3).color;
-    g.fillStyle(c);
+    const idx=Math.floor((i+t*0.5)%bananaColors.length);
+    g.fillStyle(bananaColors[idx]);
     g.fillRect(0,i*100,800,100);
   }
   
-  for(let i=0;i<40;i++){
+  for(let i=0;i<30;i++){
     const sx=((i*123)%800);
-    const sy=((i*456+t*50)%600);
-    const sz=1+Math.sin(t+i)*0.5;
-    g.fillStyle(0xFFFFFF,0.3+Math.sin(t*2+i)*0.3);
-    g.fillCircle(sx,sy,sz);
+    const sy=((i*456+t*40)%600);
+    const bx=sx,by=sy;
+    
+    g.fillStyle(0xFFFF00,0.4);
+    g.fillRect(bx+3,by,3,18);
+    g.fillRect(bx+6,by-3,3,3);
+    g.fillRect(bx,by+5,9,12);
+    g.fillStyle(0xFFDD00,0.3);
+    g.fillRect(bx+2,by+7,5,8);
+    g.fillStyle(0x8B4513,0.4);
+    g.fillRect(bx+4,by+16,2,4);
   }
+  
+  g.fillStyle(0x000000,0.7);
+  g.fillRect(30,180,90,120);
   
   const bx=50,by=200;
   g.fillStyle(0xFFFF00);
@@ -380,53 +563,62 @@ function drwMenu(){
   g.fillStyle(0x000000);
   g.fillRect(bx+8,by+60,5,5);g.fillRect(bx+17,by+60,5,5);
   g.fillRect(bx+10,by+68,10,3);
+  g.fillRect(bx+12,by+30,6,2);
   g.fillStyle(0x8B4513);
   g.fillRect(bx+13,by+50,4,15);
   
-  const ofs=Math.sin(t*3)*3;
-  drwTxt('PLATRIS',220,80+ofs,7,Phaser.Display.Color.HSVToRGB((t*0.2)%1,1,1).color);
   g.lineStyle(3,0x000000);
-  for(let ox=-2;ox<=2;ox+=2){
-    for(let oy=-2;oy<=2;oy+=2){
-      if(ox||oy)drwTxt('PLATRIS',220+ox,80+ofs+oy,7,0x000000);
+  g.strokeRect(bx-2,by-12,34,82);
+  
+  const ofs=Math.sin(t*3)*3;
+  const titleColors=[0x8B4513,0x654321,0x4A2511];
+  const tc=titleColors[Math.floor(t*2)%titleColors.length];
+  
+  for(let ox=-3;ox<=3;ox++){
+    for(let oy=-3;oy<=3;oy++){
+      if(ox||oy)drwTxt('PLATRIS',220+ox,80+ofs+oy,7,0xFFFF00);
     }
   }
-  drwTxt('PLATRIS',220,80+ofs,7,Phaser.Display.Color.HSVToRGB((t*0.2)%1,1,1).color);
+  drwTxt('PLATRIS',220,80+ofs,7,tc);
   
-  const c1=menu===0?0xFF00FF:0x555555;
-  const c2=menu===1?0xFF00FF:0x555555;
+  const c1=menu===0?0xFFDD00:0x8B4513;
+  const c2=menu===1?0xFFDD00:0x8B4513;
   const p1=menu===0?1.1:1;
   const p2=menu===1?1.1:1;
   
   g.fillStyle(c1);
   g.fillRect(250,320,300*p1,50);
-  g.fillStyle(0xFFFFFF,0.3);
+  g.fillStyle(0x000000,0.7);
   g.fillRect(255,325,290*p1,40);
-  g.fillStyle(0x000000);
+  g.fillStyle(c1,0.3);
   g.fillRect(258,328,284*p1,34);
   
   g.fillStyle(c2);
   g.fillRect(250,400,300*p2,50);
-  g.fillStyle(0xFFFFFF,0.3);
+  g.fillStyle(0x000000,0.7);
   g.fillRect(255,405,290*p2,40);
-  g.fillStyle(0x000000);
+  g.fillStyle(c2,0.3);
   g.fillRect(258,408,284*p2,34);
   
   txt[0].setText('START GAME');
   txt[0].setPosition(400,345);
-  txt[0].setStyle({fontSize:'22px',color:menu===0?'#0ff':'#888',fontStyle:'bold'});
+  txt[0].setStyle({fontSize:'22px',color:menu===0?'#FFFF00':'#999',fontStyle:'bold'});
   
   txt[1].setText('HOW TO PLAY');
   txt[1].setPosition(400,425);
-  txt[1].setStyle({fontSize:'22px',color:menu===1?'#0ff':'#888',fontStyle:'bold'});
+  txt[1].setStyle({fontSize:'22px',color:menu===1?'#FFFF00':'#999',fontStyle:'bold'});
   
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(250,490,300,25);
   txt[2].setText('A Platanus Hackathon Game');
-  txt[2].setPosition(400,500);
-  txt[2].setStyle({fontSize:'12px',color:'#ff0',fontStyle:'italic'});
+  txt[2].setPosition(400,502);
+  txt[2].setStyle({fontSize:'12px',color:'#FFFF00',fontStyle:'italic'});
   
+  g.fillStyle(0x000000,0.6);
+  g.fillRect(220,540,360,25);
   txt[3].setText('▲ ▼  SELECT  •  START  CONFIRM');
-  txt[3].setPosition(400,550);
-  txt[3].setStyle({fontSize:'14px',color:'#fff'});
+  txt[3].setPosition(400,552);
+  txt[3].setStyle({fontSize:'14px',color:'#FFFF00',fontStyle:'bold'});
 }
 
 function drwRules(){
