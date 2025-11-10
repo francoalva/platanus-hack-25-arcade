@@ -144,3 +144,5 @@ Simply tell your AI assistant what game you want to build! For example:
 > "Make a breakout game with power-ups"
 
 Your AI will handle the implementation, keeping everything within the restrictions automatically!
+
+Finished by francoalva!
