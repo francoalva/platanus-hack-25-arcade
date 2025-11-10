@@ -29,7 +29,7 @@ new Phaser.Game({type:Phaser.AUTO,width:800,height:600,backgroundColor:'#000',sc
 
 // Helper functions
 function mkP(id,x){
-  return{id,x,y:50,b:Array(20).fill(0).map(()=>Array(10).fill(0)),t:null,r:0,px:3,py:0,bag:[],nxt:[],hld:null,hu:false,pg:0,tm:0,spd:600,sd:false,cmb:0,lns:0,ts:false};
+  return{id,x,y:50,b:Array(20).fill(0).map(()=>Array(10).fill(0)),t:null,r:0,px:3,py:0,bag:[],nxt:[],hld:null,hu:false,pg:0,tm:0,spd:800,sd:false,cmb:0,lns:0,ts:false};
 }
 
 function shuf(){
@@ -203,10 +203,10 @@ function addGrb(p){
   if(p.pg===0)return;
   const h=Math.floor(Math.random()*10);
   for(let i=0;i<p.pg;i++){
-    p.b.pop();
+    p.b.shift();
     const ln=Array(10).fill(0x666666);
     ln[h]=0;
-    p.b.unshift(ln);
+    p.b.push(ln);
   }
   p.pg=0;
 }
@@ -223,6 +223,12 @@ function create(){
   txt.push(this.add.text(155,30,'PLAYER 1',{fontSize:'16px',color:'#0f0'}).setOrigin(0.5));
   txt.push(this.add.text(575,30,'PLAYER 2',{fontSize:'16px',color:'#f00'}).setOrigin(0.5));
   txt.push(this.add.text(400,575,'Press START to begin',{fontSize:'14px',color:'#ff0'}).setOrigin(0.5));
+  this.add.text(120,510,'NEXT',{fontSize:'12px',color:'#888'});
+  this.add.text(280,510,'HOLD',{fontSize:'12px',color:'#888'});
+  this.add.text(540,510,'NEXT',{fontSize:'12px',color:'#888'});
+  this.add.text(700,510,'HOLD',{fontSize:'12px',color:'#888'});
+  this.add.text(340,520,'INCOMING',{fontSize:'10px',color:'#f00'}).setOrigin(0.5).setAngle(90);
+  this.add.text(760,520,'INCOMING',{fontSize:'10px',color:'#f00'}).setOrigin(0.5).setAngle(90);
   
   this.input.keyboard.on('keydown',e=>{
     const k=K2A[e.key]||e.key;
@@ -269,8 +275,8 @@ function update(_,d){
   if(st!==1)return;
   p1.tm+=d;
   p2.tm+=d;
-  const s1=p1.sd?50:p1.spd;
-  const s2=p2.sd?50:p2.spd;
+  const s1=p1.sd?30:p1.spd;
+  const s2=p2.sd?30:p2.spd;
   if(p1.tm>=s1){
     p1.tm=0;
     if(!mv(p1,0,1))lock(p1,p2);
@@ -361,7 +367,12 @@ function drwUI(p,bx){
   }
   
   if(p.pg>0){
-    g.fillStyle(0xFF0000);
-    g.fillRect(bx,500,p.pg*20,8);
+    const bh=Math.min(p.pg*15,100);
+    g.fillStyle(0xFF0000,0.8);
+    g.fillRect(p.x+240+5,p.y+480-bh,20,bh);
+    g.lineStyle(2,0xFF0000);
+    g.strokeRect(p.x+240+5,p.y+480-100,20,100);
+    g.fillStyle(0xFFFFFF);
+    g.fillRect(p.x+240+8,p.y+485-bh,14,Math.max(2,bh-5));
   }
 }
